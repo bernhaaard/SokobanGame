@@ -1,75 +1,74 @@
 namespace libs;
-using Newtonsoft.Json;
 
 public class Map {
-    private char[,] RepresentationalLayer;
-    private GameObject?[,] GameObjectLayer;
+    private GameObject?[,] gameObjectLayer; // Layer for game objects
+    private List<Position> goalPositions; // Positions of goals
 
-    private int _mapWidth;
-    private int _mapHeight;
+    public int MapWidth { get; set; }
+    public int MapHeight { get; set; }
 
-    public Map () {
-        _mapWidth = 30;
-        _mapHeight = 8;
-        RepresentationalLayer = new char[_mapHeight, _mapWidth];
-        GameObjectLayer = new GameObject[_mapHeight, _mapWidth];
+    // Constructor initializes the map with a given width and height
+    public Map(int width, int height) {
+        MapWidth = width;
+        MapHeight = height;
+        gameObjectLayer = new GameObject?[height, width];
+        goalPositions = new List<Position>();
+        
+        Initialize();
     }
 
-    public Map (int width, int height) {
-        _mapWidth = width;
-        _mapHeight = height;
-        RepresentationalLayer = new char[_mapHeight, _mapWidth];
-        GameObjectLayer = new GameObject[_mapHeight, _mapWidth];
-    }
-
-    public void Initialize()
-    {
-        RepresentationalLayer = new char[_mapHeight, _mapWidth];
-        GameObjectLayer = new GameObject[_mapHeight, _mapWidth];
-
-        // Initialize the map with some default values
-        for (int i = 0; i < GameObjectLayer.GetLength(0); i++)
-        {
-            for (int j = 0; j < GameObjectLayer.GetLength(1); j++)
-            {
-                GameObjectLayer[i, j] = new Floor();
+    // Initializes or resets the game map layers
+    public void Initialize() {
+        for (int y = 0; y < MapHeight; y++) {
+            for (int x = 0; x < MapWidth; x++) {
+                gameObjectLayer[y, x] = null; // Clear the game object layer
             }
         }
+
+        // Initialize goal positions here or through a separate method
     }
 
-    public int MapWidth
-    {
-        get { return _mapWidth; } // Getter
-        set { _mapWidth = value; Initialize();} // Setter
-    }
-
-    public int MapHeight
-    {
-        get { return _mapHeight; } // Getter
-        set { _mapHeight = value; Initialize();} // Setter
-    }
-
-    public GameObject Get(int x, int y){
-        return GameObjectLayer[x, y];
-    }
-
-    public void Set(GameObject gameObject){
-        int posY = gameObject.PosY;
-        int posX = gameObject.PosX;
-        int prevPosY = gameObject.GetPrevPosY();
-        int prevPosX = gameObject.GetPrevPosX();
-        
-        if (prevPosX >= 0 && prevPosX < _mapWidth &&
-                prevPosY >= 0 && prevPosY < _mapHeight)
-        {
-            GameObjectLayer[prevPosY, prevPosX] = new Floor();
-        }
-
-        if (posX >= 0 && posX < _mapWidth &&
-                posY >= 0 && posY < _mapHeight)
-        {
-            GameObjectLayer[posY, posX] = gameObject;
-            RepresentationalLayer[gameObject.PosY, gameObject.PosX] = gameObject.CharRepresentation;
+    // Set a game object at a specific position on the map
+    public void Set(GameObject gameObject) {
+        if (IsWithinBounds(gameObject.PosX, gameObject.PosY)) {
+            gameObjectLayer[gameObject.PosY, gameObject.PosX] = gameObject;
         }
     }
+
+    // Clear a position on the map
+    public void ClearPosition(int x, int y) {
+        if (IsWithinBounds(x, y)) {
+            gameObjectLayer[y, x] = null;
+        }
+    }
+
+    // Check if the specified position is within the bounds of the map
+    private bool IsWithinBounds(int x, int y) {
+        return x >= 0 && x < MapWidth && y >= 0 && y < MapHeight;
+    }
+
+    // Render the map and its objects to the console
+    public void Render() {
+        for (int y = 0; y < MapHeight; y++) {
+            for (int x = 0; x < MapWidth; x++) {
+                GameObject? gameObject = gameObjectLayer[y, x];
+                char symbol = gameObject?.CharRepresentation ?? ' '; // Default to empty space
+                Console.Write(symbol);
+            }
+            Console.WriteLine();
+        }
+    }
+
+    // Checks if all goals are covered by boxes
+    public bool AreAllGoalsCovered() {
+        foreach (var goalPosition in goalPositions) {
+            GameObject? gameObject = gameObjectLayer[goalPosition.Y, goalPosition.X];
+            if (!(gameObject is Box)) {
+                return false; // A goal is not covered by a box
+            }
+        }
+        return true; // All goals are covered by boxes
+    }
+
+    // Additional methods to add or remove goals, get game objects, etc.
 }
